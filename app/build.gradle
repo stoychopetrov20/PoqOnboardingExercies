@@ -1,0 +1,104 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: 'com.google.firebase.appdistribution'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply from: "$rootDir/dagger.gradle"
+apply from: "$rootDir/automaticVersion.gradle"
+
+android {
+    compileSdkVersion appCompileSdkVersion
+    defaultConfig {
+        minSdkVersion appMinSdkVersion
+        targetSdkVersion appTargetSdkVersion
+        versionCode automaticVersionCode
+        versionName automaticVersionName
+        firebaseAppDistribution {
+            serviceCredentialsFile = "template-client-app-distribution-credentials.json"
+            groups = "poq"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        dataBinding = true
+    }
+    buildTypes {
+        release {
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            multiDexEnabled false
+        }
+        debug {
+            multiDexEnabled true
+        }
+    }
+    signingConfigs {
+        templateclientrelease {
+            keyAlias 'template-client-release'
+            keyPassword getKeyAliasPassword()
+            storeFile file("$rootDir/Keystore/PoqAppKeystore.jks")
+            storePassword 'poq1poq'
+        }
+        templateclientdev {
+            keyAlias 'template-client-uat'
+            keyPassword 'leanP0q.'
+            storeFile file("$rootDir/Keystore/PoqAppKeystore.jks")
+            storePassword 'poq1poq'
+        }
+    }
+    flavorDimensions "environment"
+    productFlavors {
+        templateclient {
+            signingConfig signingConfigs.templateclientrelease
+            applicationId "com.poqstudio.app.templateclient"
+        }
+        templateclientdev {
+            signingConfig signingConfigs.templateclientdev
+            applicationId "com.poqstudio.app.templateclientdev"
+        }
+        templateclientstaging {
+            signingConfig signingConfigs.templateclientdev
+            applicationId "com.poqstudio.app.templateclientstaging"
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = "$javaVersion"
+    }
+}
+
+def getKeyAliasPassword() {
+    if (hasProperty('KEY_ALIAS_PASSWORD')) {
+        return KEY_ALIAS_PASSWORD
+    } else {
+        return ""
+    }
+}
+
+configurations {
+    templateclientReleaseImplementation {}
+    templateclientdevReleaseImplementation {}
+    templateclientstagingReleaseImplementation {}
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+
+    implementation("com.poqstudio:platform:$poqPlatformVersion")
+    implementation("com.poqstudio:analytics.firebase:$poqPlatformVersion")
+
+    debugImplementation "com.readystatesoftware.chuck:library:$chuckVersion"
+    templateclientdevReleaseImplementation "com.readystatesoftware.chuck:library:$chuckVersion"
+    templateclientstagingReleaseImplementation "com.readystatesoftware.chuck:library:$chuckVersion"
+    templateclientReleaseImplementation "com.readystatesoftware.chuck:library-no-op:$chuckVersion"
+
+    testImplementation("com.poqstudio:testutils.unit:$poqPlatformVersion")
+}
